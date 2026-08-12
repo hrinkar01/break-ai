@@ -1,26 +1,29 @@
 import { NextResponse } from 'next/server';
-import { LAB_CHALLENGES } from '@/lib/challenges';
+import { verifyFlag } from '@/lib/flags';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const challengeId = body.challengeId;
-    const submittedFlag = (body.flag || '').trim();
+    const { challengeId, flag } = body;
 
-    const challenge = LAB_CHALLENGES.find((c) => c.id === challengeId) || LAB_CHALLENGES[0];
+    if (!challengeId || !flag) {
+      return NextResponse.json({ detail: 'Challenge ID and flag are required.' }, { status: 400 });
+    }
 
-    if (submittedFlag === challenge.flag) {
+    const isValid = verifyFlag(challengeId, flag);
+
+    if (isValid) {
       return NextResponse.json({
         status: 'success',
-        message: '🎉 Correct flag! Challenge completed.',
+        message: '🎉 Verified! Flag signature matches server secret.',
       });
     }
 
     return NextResponse.json(
-      { detail: '❌ Invalid flag! Keep hunting.' },
+      { detail: '❌ Invalid flag! Check string formatting or exploit accuracy.' },
       { status: 400 }
     );
   } catch {
-    return NextResponse.json({ detail: 'Invalid payload' }, { status: 400 });
+    return NextResponse.json({ detail: 'Invalid request format.' }, { status: 400 });
   }
 }
